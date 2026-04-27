@@ -74,7 +74,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer; /* 클릭 가능 표시 */
         }
+
+        .title:hover { opacity: 0.8; }
 
         .controls {
             display: flex;
@@ -173,12 +176,60 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
+
+        /* 플레이리스트 모달 추가 */
+        #playlistModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #playlistModal h2 { color: var(--accent-color); margin-bottom: 20px; }
+        
+        .list-container {
+            width: 100%;
+            max-width: 350px;
+            max-height: 60vh;
+            overflow-y: auto;
+            background: #111;
+            border-radius: 20px;
+            padding: 10px;
+        }
+
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .list-item:hover { background: #222; color: var(--accent-color); }
+        .list-item:last-child { border-bottom: none; }
+
+        .close-modal {
+            margin-top: 30px;
+            background: none;
+            border: 1px solid #444;
+            color: #888;
+            padding: 10px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="loading">
 
     <div class="player-container">
-        <div class="title" id="title">오디오를 불러오는 중...</div>
+        <div class="title" id="title" title="클릭하여 목록 보기">오디오를 불러오는 중...</div>
 
         <div class="controls">
             <button class="play-btn" id="playBtn" disabled>
@@ -203,6 +254,13 @@
         </div>
     </div>
 
+    <!-- 플레이리스트 모달 -->
+    <div id="playlistModal">
+        <h2>플레이리스트</h2>
+        <div class="list-container" id="listContainer"></div>
+        <button class="close-modal" id="closeModal">닫기</button>
+    </div>
+
     <audio id="audio" preload="auto"></audio>
 
     <script>
@@ -216,6 +274,11 @@
         const titleEl = document.getElementById('title');
         const errorEl = document.getElementById('errorMsg');
         const statusEl = document.getElementById('statusMsg');
+        const playlistModal = document.getElementById('playlistModal');
+        const listContainer = document.getElementById('listContainer');
+        const closeModal = document.getElementById('closeModal');
+
+        let playlist = [];
 
         // SVG Paths
         const PLAY_PATH = 'M8 5v14l11-7z';
@@ -223,42 +286,71 @@
 
         async function initPlayer() {
             try {
-                // 1. 설정 파일 로드
                 const response = await fetch('playlist.json');
+                if (!response.ok) throw new Error('Playlist load failed');
                 const config = await response.json();
+                playlist = config.files || [];
                 
-                // 2. URL 파라미터 확인 (?f=파일명)
+                renderPlaylist();
+
+                // 1. 쿼리 파라미터 확인 (?f=)
                 const params = new URLSearchParams(window.location.search);
                 let targetFile = params.get('f');
 
-                if (!targetFile && config.files && config.files.length > 0) {
-                    targetFile = config.files[0];
+                // 2. 해시 확인 (#파일명) - 쿼리 스트링이 안될 경우 대비
+                if (!targetFile && window.location.hash) {
+                    targetFile = window.location.hash.substring(1);
                 }
 
                 if (targetFile) {
+                    // 한글 인코딩 복원 (GitHub 등에서 인코딩된 채로 들어올 수 있음)
+                    targetFile = decodeURIComponent(targetFile);
                     setupAudio(targetFile);
+                } else if (playlist.length > 0) {
+                    setupAudio(playlist[0]);
                 } else {
                     throw new Error('재생할 파일이 없습니다.');
                 }
             } catch (err) {
                 console.error(err);
-                titleEl.innerText = "파일을 찾을 수 없습니다";
+                titleEl.innerText = "파일 목록을 불러올 수 없습니다";
                 document.body.classList.remove('loading');
+                showModal();
             }
+        }
+
+        function renderPlaylist() {
+            listContainer.innerHTML = '';
+            playlist.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerText = file.replace('.mp3', '');
+                item.onclick = () => {
+                    setupAudio(file);
+                    hideModal();
+                };
+                listContainer.appendChild(item);
+            });
         }
 
         function setupAudio(fileName) {
             const displayName = fileName.replace('.mp3', '');
             titleEl.innerText = displayName;
+            
+            // 기존 오디오 초기화
+            audio.pause();
+            audio.currentTime = 0;
+            progressBar.style.width = '0%';
+            
+            // 파일명 인코딩 처리
             audio.src = encodeURIComponent(fileName);
             playBtn.disabled = false;
+            errorEl.style.display = 'none';
             document.body.classList.remove('loading');
 
-            // 자동 재생 시도
             audio.play().then(() => {
                 updateUI(true);
             }).catch(() => {
-                // 상호작용 필요
                 statusEl.innerText = "터치하여 재생을 시작하세요.";
             });
         }
@@ -275,7 +367,13 @@
             return `${min}:${sec < 10 ? '0' + sec : sec}`;
         }
 
+        function showModal() { playlistModal.style.display = 'flex'; }
+        function hideModal() { playlistModal.style.display = 'none'; }
+
         // Events
+        titleEl.addEventListener('click', showModal);
+        closeModal.addEventListener('click', hideModal);
+
         playBtn.addEventListener('click', () => {
             if (audio.paused) {
                 audio.play();
@@ -303,9 +401,10 @@
             statusEl.innerText = "재생이 완료되었습니다.";
         });
 
-        audio.addEventListener('error', () => {
+        audio.addEventListener('error', (e) => {
+            console.error("Audio error:", e);
             errorEl.style.display = 'block';
-            playBtn.disabled = true;
+            statusEl.innerText = "파일을 로드할 수 없습니다.";
         });
 
         progressContainer.addEventListener('click', (e) => {
