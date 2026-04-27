@@ -50,19 +50,6 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* 배경 장식 */
-        .player-container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-            opacity: 0.1;
-            pointer-events: none;
-        }
-
         .title {
             font-size: 22px;
             font-weight: 600;
@@ -74,10 +61,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer; /* 클릭 가능 표시 */
         }
-
-        .title:hover { opacity: 0.8; }
 
         .controls {
             display: flex;
@@ -102,24 +86,11 @@
             z-index: 2;
         }
 
-        .play-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 20px 45px rgba(201, 163, 108, 0.4);
-        }
+        .play-btn:hover { transform: scale(1.05); }
+        .play-btn:active { transform: scale(0.95); }
+        .play-btn svg { width: 40px; height: 40px; fill: #111; }
 
-        .play-btn:active {
-            transform: scale(0.95);
-        }
-
-        .play-btn svg {
-            width: 40px;
-            height: 40px;
-            fill: #111;
-        }
-
-        .progress-section {
-            width: 100%;
-        }
+        .progress-section { width: 100%; }
 
         .progress-container {
             width: 100%;
@@ -137,7 +108,6 @@
             background: var(--accent-color);
             border-radius: 10px;
             transition: width 0.1s linear;
-            box-shadow: 0 0 10px var(--accent-glow);
         }
 
         .time-display {
@@ -153,7 +123,6 @@
             font-size: 14px;
             color: var(--text-dim);
             opacity: 0.8;
-            letter-spacing: -0.02em;
         }
 
         .error-msg {
@@ -162,74 +131,12 @@
             margin-top: 15px;
             display: none;
         }
-
-        /* Skeleton animation for loading */
-        .loading .title {
-            background: linear-gradient(90deg, #222, #333, #222);
-            background-size: 200% 100%;
-            animation: loading-shimmer 1.5s infinite;
-            border-radius: 10px;
-            color: transparent;
-        }
-
-        @keyframes loading-shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* 플레이리스트 모달 추가 */
-        #playlistModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        #playlistModal h2 { color: var(--accent-color); margin-bottom: 20px; }
-        
-        .list-container {
-            width: 100%;
-            max-width: 350px;
-            max-height: 60vh;
-            overflow-y: auto;
-            background: #111;
-            border-radius: 20px;
-            padding: 10px;
-        }
-
-        .list-item {
-            padding: 15px;
-            border-bottom: 1px solid #222;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .list-item:hover { background: #222; color: var(--accent-color); }
-        .list-item:last-child { border-bottom: none; }
-
-        .close-modal {
-            margin-top: 30px;
-            background: none;
-            border: 1px solid #444;
-            color: #888;
-            padding: 10px 25px;
-            border-radius: 30px;
-            cursor: pointer;
-        }
     </style>
 </head>
-<body class="loading">
+<body>
 
     <div class="player-container">
-        <div class="title" id="title" title="클릭하여 목록 보기">오디오를 불러오는 중...</div>
+        <div class="title" id="title">준비 중...</div>
 
         <div class="controls">
             <button class="play-btn" id="playBtn" disabled>
@@ -242,7 +149,6 @@
                 <div class="progress-container" id="progressContainer">
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
-
                 <div class="time-display">
                     <span id="currentTime">0:00</span>
                     <span id="duration">0:00</span>
@@ -250,15 +156,8 @@
             </div>
 
             <div class="status-msg" id="statusMsg">재생 버튼을 눌러주세요.</div>
-            <div class="error-msg" id="errorMsg">파일을 재생할 수 없습니다.</div>
+            <div class="error-msg" id="errorMsg">파일을 찾을 수 없거나 로드에 실패했습니다.</div>
         </div>
-    </div>
-
-    <!-- 플레이리스트 모달 -->
-    <div id="playlistModal">
-        <h2>플레이리스트</h2>
-        <div class="list-container" id="listContainer"></div>
-        <button class="close-modal" id="closeModal">닫기</button>
     </div>
 
     <audio id="audio" preload="auto"></audio>
@@ -274,76 +173,28 @@
         const titleEl = document.getElementById('title');
         const errorEl = document.getElementById('errorMsg');
         const statusEl = document.getElementById('statusMsg');
-        const playlistModal = document.getElementById('playlistModal');
-        const listContainer = document.getElementById('listContainer');
-        const closeModal = document.getElementById('closeModal');
 
-        let playlist = [];
-
-        // SVG Paths
         const PLAY_PATH = 'M8 5v14l11-7z';
         const PAUSE_PATH = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
 
-        async function initPlayer() {
-            // URL 파라미터 우선 확인
+        function init() {
             const params = new URLSearchParams(window.location.search);
-            let targetFile = params.get('f') || (window.location.hash ? window.location.hash.substring(1) : null);
+            let fileName = params.get('f') || (window.location.hash ? window.location.hash.substring(1) : null);
 
-            try {
-                const response = await fetch('playlist.json');
-                if (response.ok) {
-                    const config = await response.json();
-                    playlist = config.files || [];
-                    renderPlaylist();
-                }
-            } catch (err) {
-                console.warn('Playlist config not found, using URL param only.');
-            }
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+                titleEl.innerText = fileName.replace('.mp3', '');
+                audio.src = encodeURIComponent(fileName);
+                playBtn.disabled = false;
 
-            if (targetFile) {
-                setupAudio(decodeURIComponent(targetFile));
-            } else if (playlist.length > 0) {
-                setupAudio(playlist[0]);
+                // 자동 재생 시도
+                audio.play().catch(() => {
+                    statusEl.innerText = "터치하여 재생을 시작하세요.";
+                });
             } else {
-                titleEl.innerText = "재생할 파일을 지정해주세요";
-                document.body.classList.remove('loading');
+                titleEl.innerText = "재생할 파일이 없습니다.";
+                statusEl.innerText = "?f=파일명.mp3 형식을 확인해주세요.";
             }
-        }
-
-        function renderPlaylist() {
-            listContainer.innerHTML = '';
-            playlist.forEach(file => {
-                const item = document.createElement('div');
-                item.className = 'list-item';
-                item.innerText = file.replace('.mp3', '');
-                item.onclick = () => {
-                    setupAudio(file);
-                    hideModal();
-                };
-                listContainer.appendChild(item);
-            });
-        }
-
-        function setupAudio(fileName) {
-            const displayName = fileName.replace('.mp3', '');
-            titleEl.innerText = displayName;
-            
-            // 기존 오디오 초기화
-            audio.pause();
-            audio.currentTime = 0;
-            progressBar.style.width = '0%';
-            
-            // 파일명 인코딩 처리
-            audio.src = encodeURIComponent(fileName);
-            playBtn.disabled = false;
-            errorEl.style.display = 'none';
-            document.body.classList.remove('loading');
-
-            audio.play().then(() => {
-                updateUI(true);
-            }).catch(() => {
-                statusEl.innerText = "터치하여 재생을 시작하세요.";
-            });
         }
 
         function updateUI(isPlaying) {
@@ -358,19 +209,9 @@
             return `${min}:${sec < 10 ? '0' + sec : sec}`;
         }
 
-        function showModal() { playlistModal.style.display = 'flex'; }
-        function hideModal() { playlistModal.style.display = 'none'; }
-
-        // Events
-        titleEl.addEventListener('click', showModal);
-        closeModal.addEventListener('click', hideModal);
-
         playBtn.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play();
-            } else {
-                audio.pause();
-            }
+            if (audio.paused) audio.play();
+            else audio.pause();
         });
 
         audio.addEventListener('play', () => updateUI(true));
@@ -380,34 +221,28 @@
             const percent = (audio.currentTime / audio.duration) * 100;
             progressBar.style.width = (percent || 0) + '%';
             currentTimeEl.innerText = formatTime(audio.currentTime);
-            if (audio.duration) {
-                durationEl.innerText = formatTime(audio.duration);
-            }
+            if (audio.duration) durationEl.innerText = formatTime(audio.duration);
         });
 
         audio.addEventListener('ended', () => {
             updateUI(false);
             progressBar.style.width = '0%';
             currentTimeEl.innerText = '0:00';
-            statusEl.innerText = "재생이 완료되었습니다.";
+            statusEl.innerText = "재생 완료";
         });
 
-        audio.addEventListener('error', (e) => {
-            console.error("Audio error:", e);
+        audio.addEventListener('error', () => {
             errorEl.style.display = 'block';
-            statusEl.innerText = "파일을 로드할 수 없습니다.";
+            statusEl.innerText = "로드 실패";
         });
 
         progressContainer.addEventListener('click', (e) => {
             const width = progressContainer.clientWidth;
             const clickX = e.offsetX;
-            if (audio.duration) {
-                audio.currentTime = (clickX / width) * audio.duration;
-            }
+            if (audio.duration) audio.currentTime = (clickX / width) * audio.duration;
         });
 
-        // Initialize
-        initPlayer();
+        init();
     </script>
 </body>
 </html>
