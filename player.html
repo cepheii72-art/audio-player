@@ -285,37 +285,28 @@
         const PAUSE_PATH = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
 
         async function initPlayer() {
+            // URL 파라미터 우선 확인
+            const params = new URLSearchParams(window.location.search);
+            let targetFile = params.get('f') || (window.location.hash ? window.location.hash.substring(1) : null);
+
             try {
                 const response = await fetch('playlist.json');
-                if (!response.ok) throw new Error('Playlist load failed');
-                const config = await response.json();
-                playlist = config.files || [];
-                
-                renderPlaylist();
-
-                // 1. 쿼리 파라미터 확인 (?f=)
-                const params = new URLSearchParams(window.location.search);
-                let targetFile = params.get('f');
-
-                // 2. 해시 확인 (#파일명) - 쿼리 스트링이 안될 경우 대비
-                if (!targetFile && window.location.hash) {
-                    targetFile = window.location.hash.substring(1);
-                }
-
-                if (targetFile) {
-                    // 한글 인코딩 복원 (GitHub 등에서 인코딩된 채로 들어올 수 있음)
-                    targetFile = decodeURIComponent(targetFile);
-                    setupAudio(targetFile);
-                } else if (playlist.length > 0) {
-                    setupAudio(playlist[0]);
-                } else {
-                    throw new Error('재생할 파일이 없습니다.');
+                if (response.ok) {
+                    const config = await response.json();
+                    playlist = config.files || [];
+                    renderPlaylist();
                 }
             } catch (err) {
-                console.error(err);
-                titleEl.innerText = "파일 목록을 불러올 수 없습니다";
+                console.warn('Playlist config not found, using URL param only.');
+            }
+
+            if (targetFile) {
+                setupAudio(decodeURIComponent(targetFile));
+            } else if (playlist.length > 0) {
+                setupAudio(playlist[0]);
+            } else {
+                titleEl.innerText = "재생할 파일을 지정해주세요";
                 document.body.classList.remove('loading');
-                showModal();
             }
         }
 
