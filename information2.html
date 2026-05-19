@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>신민당 개헌반대 성명서</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- GSAP for Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f6f5f3;
+            --text-color: #333333;
+            --box-bg: #3c3836;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--bg-color);
+        }
+
+        .title-box {
+            background-color: var(--box-bg);
+            color: #ffffff;
+            text-align: center;
+            padding: 90px 20px 60px 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        .content-wrapper {
+            padding: 0 40px;
+            padding-bottom: 60px;
+        }
+
+        .main-text p {
+            font-size: 15px;
+            margin: 0 0 20px 0;
+            word-break: keep-all;
+            letter-spacing: -0.5px;
+            line-height: 1.8;
+            text-align: justify;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div class="title-box">
+            <h1>신민당 개헌반대 성명서</h1>
+        </div>
+        
+        <div class="content-wrapper">
+            <div class="main-text">
+                <p>길전식(이름) 공화당 사무총장이 말한 대통령과 국회의원의 임기 6년제를 위한 개헌발설은 그의 사견으로 볼 수 없는 지난 삼선개헌때와 꼭같은 수법의 에드바룬으로서 공화당이 작심하고 있는 바를 드러낸 중대사실이다.</p>
+                <p>비상사태 선언과 국가보위법의 불법 처리하에 공화당정부가 현금(現今, 지금) 추진하고 있는 소위 새마을 사업을 통한 노인층, 청년층, 부녀층별 면면부락(모든 면과 마을)에 이르는 모든 국민에 대한 강제 조직화 작업이 바로 이러한 개헌에 대비한 사전정지(事前整地, 미리 환경이나 기반을 조성) 작업임을 입증하는 결과라고 아니할 수 없다.</p>
+                <p>선거시에 막대한 정치자금이 소요된다고 하나 천문학적인 자금 살포로서 선거를 타락으로 몰아 넣은 것이 바로 공화당임을 명심해야 할 것이며, 사년제의 임기가 짧다고 하나 공화당 집권 12년의 장기 집권이 아직도 짧아서 업적을 쌓을 수가 없다는 말인지 반문하는 바이다.</p>
+                <p>우리는 모든 구민(국민)과 더불어 현 정권의 집권 연장을 위한 어떠한 개헌에도 이를 반대하고 단호히 투쟁할 것이다. 또한 공화당은 이러한 시대착오적인 망상을 즉각 지양할 것을 경고해 마지 않는다.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // GSAP Animations
+        window.addEventListener('DOMContentLoaded', () => {
+            const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.8 } });
+
+            tl.from(".title-box", { y: -20, opacity: 0 })
+              .from(".main-text p", { y: 15, opacity: 0, stagger: 0.15 }, "-=0.4");
+        });
+    </script>
+</body>
+</html>
